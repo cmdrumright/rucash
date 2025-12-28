@@ -38,6 +38,25 @@ where
             .collect())
     }
 
+    pub async fn root_account(&self) -> Result<Account<Q>, Error> {
+
+        // Consider getting root account GUID from the book instead of account table
+
+        let qs = self.query.root_account().await?;
+        let mut accounts: Vec<Account<Q>> = qs
+            .into_iter()
+            .map(|x| Account::from_with_query(&x, self.query.clone()))
+            .collect();
+        match accounts.pop() {
+            None => Err(Error::NameNotFound { model: "Account".to_string(), name: "Root Account".to_string() }),
+            Some(x) if accounts.is_empty() => Ok(x),
+            _ => Err(Error::NameMultipleFound {
+                model: "Account".to_string(),
+                name: "Root Account".to_string(),
+            }),
+        }
+    }
+
     pub async fn accounts_contains_name_ignore_case(
         &self,
         name: &str,

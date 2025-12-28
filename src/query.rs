@@ -17,6 +17,9 @@ pub trait Query:
     fn accounts(&self) -> impl std::future::Future<Output = Result<Vec<Self::A>, Error>> + Send {
         async { AccountQ::all(self).await }
     }
+    fn root_account(&self) -> impl std::future::Future<Output = Result<Vec<Self::A>, Error>> + Send {
+        async { AccountQ::root(self).await }
+    }
     fn accounts_contains_name_ignore_case(
         &self,
         name: &str,
@@ -46,6 +49,7 @@ pub trait AccountQ {
     type A: AccountT;
 
     fn all(&self) -> impl std::future::Future<Output = Result<Vec<Self::A>, Error>> + Send;
+    fn root(&self) -> impl std::future::Future<Output = Result<Vec<Self::A>, Error>> + Send;
     fn guid(
         &self,
         guid: &str,

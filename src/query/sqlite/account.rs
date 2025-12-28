@@ -108,6 +108,16 @@ impl AccountQ for SQLiteQuery {
         Ok(result)
     }
 
+    async fn root(&self) -> Result<Vec<Self::A>, Error> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(&format!("{SEL}\nWHERE account_type = 'ROOT' AND name = 'Root Account'"))?;
+        let result = stmt
+            .query([])?
+            .mapped(|row| Account::try_from(row))
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(result)
+    }
+
     async fn guid(&self, guid: &str) -> Result<Vec<Self::A>, Error> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(&format!("{SEL}\nWHERE guid = ?"))?;
@@ -233,6 +243,13 @@ mod tests {
         let query = setup().await;
         let result = query.all().await.unwrap();
         assert_eq!(result.len(), 21);
+    }
+
+    #[tokio::test]
+    async fn test_root() {
+        let query = setup().await;
+        let result = query.root().await.unwrap();
+        assert_eq!(result[0].guid, "00622dda21937b29e494179de5013f82");
     }
 
     #[tokio::test]

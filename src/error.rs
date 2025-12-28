@@ -4,6 +4,8 @@ pub enum Error {
     NoBook(String),
     #[error("No {model} found for GUID: {guid}")]
     GuidNotFound { model: String, guid: String },
+    #[error("No {model} found for Name: {name}")]
+    NameNotFound { model: String, name: String },
     #[error("Multiple {model} found for GUID: {guid}")]
     GuidMultipleFound { model: String, guid: String },
     #[error("Multiple {model} found for name: {name}")]
