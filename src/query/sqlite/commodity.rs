@@ -113,6 +113,16 @@ impl CommodityQ for SQLiteQuery {
             .collect::<Result<Vec<_>, _>>()?;
         Ok(result)
     }
+
+    async fn mnemonic(&self, mnemonic: &str) -> Result<Vec<Self::C>, Error> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(&format!("{SEL}\nWHERE mnemonic = ?"))?;
+        let result = stmt
+            .query([mnemonic])?
+            .mapped(|row| Commodity::try_from(row))
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(result)
+    }
 }
 
 #[cfg(test)]

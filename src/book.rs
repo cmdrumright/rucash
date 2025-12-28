@@ -136,6 +136,22 @@ where
             .collect())
     }
 
+    pub async fn commodity_with_mnemonic(&self, mnemonic: &str) -> Result<Commodity<Q>, Error> {
+        let q_commodities = self.query.commodities_with_mnemonic(mnemonic).await?;
+        let mut commodities: Vec<Commodity<Q>> = q_commodities
+            .into_iter()
+            .map(|x| Commodity::from_with_query(&x, self.query.clone()))
+            .collect();
+        match commodities.pop() {
+            None => Err(Error::NameNotFound { model: "Commodity".to_string(), name: mnemonic.to_string() }),
+            Some(commodity) if commodities.is_empty() => Ok(commodity),
+            _ => Err(Error::NameMultipleFound {
+                model: "Commodity".to_string(),
+                name: mnemonic.to_string(),
+            }),
+        }
+    }
+
     pub async fn currencies(&self) -> Result<Vec<Commodity<Q>>, Error> {
         let currencies = self.query.currencies().await?;
         Ok(currencies

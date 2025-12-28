@@ -43,6 +43,9 @@ pub trait Query:
     fn commodities(&self) -> impl std::future::Future<Output = Result<Vec<Self::C>, Error>> + Send {
         async { CommodityQ::all(self).await }
     }
+    fn commodities_with_mnemonic(&self, mnemonic: &str) -> impl std::future::Future<Output = Result<Vec<Self::C>, Error>> + Send {
+        async { CommodityQ::mnemonic(self, mnemonic).await }
+    }
 }
 
 pub trait AccountQ {
@@ -83,6 +86,10 @@ pub trait CommodityQ {
     fn namespace(
         &self,
         guid: &str,
+    ) -> impl std::future::Future<Output = Result<Vec<Self::C>, Error>> + Send;
+    fn mnemonic(
+        &self,
+        mnemonic: &str,
     ) -> impl std::future::Future<Output = Result<Vec<Self::C>, Error>> + Send;
 }
 
