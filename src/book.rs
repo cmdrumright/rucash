@@ -3,7 +3,7 @@ use tokio::sync::Mutex;
 
 use crate::error::Error;
 use crate::exchange::Exchange;
-use crate::model::{Account, Commodity, Price, Split, Transaction};
+use crate::model::{Account, Commodity, Price, Split, SplitBuilder, Transaction};
 use crate::query::Query;
 
 #[derive(Debug, Clone)]
