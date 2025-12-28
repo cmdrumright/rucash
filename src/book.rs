@@ -49,12 +49,33 @@ where
             .collect();
         match accounts.pop() {
             None => Err(Error::NameNotFound { model: "Account".to_string(), name: "Root Account".to_string() }),
-            Some(x) if accounts.is_empty() => Ok(x),
+            Some(account) if accounts.is_empty() => Ok(account),
             _ => Err(Error::NameMultipleFound {
                 model: "Account".to_string(),
                 name: "Root Account".to_string(),
             }),
         }
+    }
+
+    pub async fn account_with_fullname (
+        &self,
+        fullname: &str
+    ) -> Result<Account<Q>, Error> {
+        // split fullname into names
+        let names = fullname.split(":");
+        // Get root account
+        let mut account = self.root_account().await?;
+        // loop through name parts and find account child that matches name
+        for name in names {
+            let children = account.children().await?;
+            let child = children.iter().find(|child| child.name == name);
+            // handle None value from find
+            if child.is_none() {
+                return Err(Error::NameNotFound { model: "Account".to_string(), name: name.to_string() })
+            };
+            account = child.unwrap().clone();
+        };
+        Ok(account)
     }
 
     pub async fn accounts_contains_name_ignore_case(
