@@ -29,6 +29,38 @@ pub trait Query:
     fn splits(&self) -> impl std::future::Future<Output = Result<Vec<Self::S>, Error>> + Send {
         async { SplitQ::all(self).await }
     }
+    fn create_split(
+        &self,
+        guid: &str,
+        tx_guid: &str,
+        account_guid: &str,
+        memo: &str,
+        action: &str,
+        reconcile_state: &str,
+        reconcile_date: &NaiveDateTime,
+        value_num: &i64,
+        value_denom: &i64,
+        quantity_num: &i64,
+        quantity_denom: &i64
+    ) -> impl std::future::Future<Output = Result<Vec<Self::S>, Error>> + Send {
+        async {
+            SplitQ::create(
+                self,
+                guid,
+                tx_guid,
+                account_guid,
+                memo,
+                action,
+                reconcile_state,
+                reconcile_date,
+                value_num,
+                value_denom,
+                quantity_num,
+                quantity_denom
+            ).await;
+            SplitQ::guid(self, guid).await
+        }
+    }
     fn transactions(
         &self,
     ) -> impl std::future::Future<Output = Result<Vec<Self::T>, Error>> + Send {
@@ -131,6 +163,20 @@ pub trait SplitQ {
         &self,
         guid: &str,
     ) -> impl std::future::Future<Output = Result<Vec<Self::S>, Error>> + Send;
+    fn create(
+        &self,
+        guid: &str,
+        tx_guid: &str,
+        account_guid: &str,
+        memo: &str,
+        action: &str,
+        reconcile_state: &str,
+        reconcile_date: &NaiveDateTime,
+        value_num: &i64,
+        value_denom: &i64,
+        quantity_num: &i64,
+        quantity_denom: &i64,
+    ) -> impl std::future::Future<Output = Result<(), Error>> + Send;
 }
 
 pub trait TransactionQ {

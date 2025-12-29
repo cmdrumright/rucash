@@ -117,6 +117,22 @@ lot_guid
 FROM splits
 ";
 
+const INS: &str = r"
+INSERT INTO splits (
+    guid,
+    tx_guid,
+    account_guid,
+    memo,
+    action,
+    reconcile_state,
+    reconcile_date,
+    value_num,
+    value_denom,
+    quantity_num,
+    quantity_denom
+) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
+";
+
 impl SplitQ for SQLiteQuery {
     type S = Split;
 
@@ -158,6 +174,40 @@ impl SplitQ for SQLiteQuery {
             .mapped(|row| Split::try_from(row))
             .collect::<Result<Vec<_>, _>>()?;
         Ok(result)
+    }
+
+    async fn create(
+        &self,
+        guid: &str,
+        tx_guid: &str,
+        account_guid: &str,
+        memo: &str,
+        action: &str,
+        reconcile_state: &str,
+        reconcile_date: &NaiveDateTime,
+        value_num: &i64,
+        value_denom: &i64,
+        quantity_num: &i64,
+        quantity_denom: &i64,
+    ) -> Result<(), Error> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            INS,
+            (
+                &guid,
+                &tx_guid,
+                &account_guid,
+                memo,
+                action,
+                reconcile_state,
+                reconcile_date,
+                value_num,
+                value_denom,
+                quantity_num,
+                quantity_denom
+            ),
+        )?;
+        Ok(())
     }
 }
 

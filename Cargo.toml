@@ -31,6 +31,7 @@ rusqlite = { version = "0.37", features = [
     "bundled",
     "chrono",
 ], optional = true }
+uuid = { version = "1.19", features = ["v4"] }
 
 [lib]
 name = "rucash"

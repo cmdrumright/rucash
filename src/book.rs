@@ -1,5 +1,7 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use chrono::NaiveDateTime;
+use uuid::Uuid;
 
 use crate::error::Error;
 use crate::exchange::Exchange;
@@ -110,6 +112,50 @@ where
             .into_iter()
             .map(|x| Split::from_with_query(&x, self.query.clone()))
             .collect())
+    }
+
+    pub async fn create_split(
+        &self,
+        tx_guid: &str,
+        account: Account<Q>,
+        memo: &str,
+        action: &str,
+        reconcile_state: &str,
+        reconcile_date: &NaiveDateTime,
+        value_num: i64,
+        value_denom: i64,
+        quantity_num: i64,
+        quantity_denom: i64
+    ) -> Result<Split<Q>, Error> {
+        
+        let new_uuid = Uuid::new_v4().to_string();
+        let guid = new_uuid.as_str();
+
+        let q_splits = self.query.create_split(
+            guid,
+            tx_guid,
+            &account.guid,
+            memo,
+            action,
+            reconcile_state,
+            reconcile_date,
+            &value_num,
+            &value_denom,
+            &quantity_num,
+            &quantity_denom
+        ).await?;
+        let mut splits: Vec<Split<Q>> = q_splits
+            .into_iter()
+            .map(|x| Split::from_with_query(&x, self.query.clone()))
+            .collect();
+        match splits.pop() {
+            None => Err(Error::GuidNotFound { model: "Split".to_string(), guid: new_uuid }),
+            Some(split) if splits.is_empty() => Ok(split),
+            _ => Err(Error::NameMultipleFound {
+                model: "Split".to_string(),
+                name: new_uuid,
+            }),
+        }
     }
 
     pub async fn transactions(&self) -> Result<Vec<Transaction<Q>>, Error> {
