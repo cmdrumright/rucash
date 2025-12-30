@@ -3,7 +3,6 @@
 
 use chrono::NaiveDateTime;
 use rusqlite::Row;
-#[cfg(feature = "decimal")]
 use rust_decimal::Decimal;
 
 use super::SQLiteQuery;
@@ -59,13 +58,6 @@ impl PriceT for Price {
         self.r#type.clone().unwrap_or_default()
     }
 
-    #[cfg(not(feature = "decimal"))]
-    #[allow(clippy::cast_precision_loss)]
-    fn value(&self) -> f64 {
-        self.value_num as f64 / self.value_denom as f64
-    }
-
-    #[cfg(feature = "decimal")]
     fn value(&self) -> Decimal {
         Decimal::new(self.value_num, 0) / Decimal::new(self.value_denom, 0)
     }
@@ -140,8 +132,6 @@ impl PriceQ for SQLiteQuery {
 mod tests {
     use super::*;
 
-    #[cfg(not(feature = "decimal"))]
-    use float_cmp::assert_approx_eq;
     use pretty_assertions::assert_eq;
     use tokio::sync::OnceCell;
 
@@ -198,9 +188,6 @@ mod tests {
         );
         assert_eq!(result.source(), "user:price-editor");
         assert_eq!(result.r#type(), "unknown");
-        #[cfg(not(feature = "decimal"))]
-        assert_approx_eq!(f64, result.value(), 1.5);
-        #[cfg(feature = "decimal")]
         assert_eq!(result.value(), Decimal::new(15, 1));
     }
 
@@ -219,9 +206,6 @@ mod tests {
             .await
             .unwrap();
 
-        #[cfg(not(feature = "decimal"))]
-        assert_approx_eq!(f64, result[0].value(), 1.5);
-        #[cfg(feature = "decimal")]
         assert_eq!(result[0].value(), Decimal::new(15, 1));
     }
 
@@ -233,9 +217,6 @@ mod tests {
             .await
             .unwrap();
 
-        #[cfg(not(feature = "decimal"))]
-        assert_approx_eq!(f64, result[0].value(), 1.5);
-        #[cfg(feature = "decimal")]
         assert_eq!(result[0].value(), Decimal::new(15, 1));
     }
 
@@ -247,9 +228,6 @@ mod tests {
             .await
             .unwrap();
 
-        #[cfg(not(feature = "decimal"))]
-        assert_approx_eq!(f64, result[0].value(), 1.5);
-        #[cfg(feature = "decimal")]
         assert_eq!(result[0].value(), Decimal::new(15, 1));
     }
 

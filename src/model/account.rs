@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use rust_decimal::Decimal;
 
 use crate::Book;
 use crate::error::Error;
@@ -110,8 +111,8 @@ where
         &'a self,
         currency: &'a Commodity<Q>,
         book: &'a Book<Q>,
-    ) -> Result<crate::Num, Error> {
-        let mut net: crate::Num = self.splits().await?.iter().map(|s| s.quantity).sum();
+    ) -> Result<Decimal, Error> {
+        let mut net: Decimal = self.splits().await?.iter().map(|s| s.quantity).sum();
         let commodity = self.commodity().await?;
 
         for child in self.children().await? {
@@ -136,8 +137,8 @@ where
         Ok(net * rate)
     }
 
-    pub async fn balance(&self, book: &Book<Q>) -> Result<crate::Num, Error> {
-        let mut net: crate::Num = self.splits().await?.iter().map(|s| s.quantity).sum();
+    pub async fn balance(&self, book: &Book<Q>) -> Result<Decimal, Error> {
+        let mut net: Decimal = self.splits().await?.iter().map(|s| s.quantity).sum();
 
         let commodity = self.commodity().await?;
 
@@ -154,11 +155,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[cfg(not(feature = "decimal"))]
-    use float_cmp::assert_approx_eq;
-    #[cfg(feature = "decimal")]
-    use rust_decimal::Decimal;
 
     #[cfg(feature = "sqlite")]
     mod sqlite {
@@ -321,16 +317,6 @@ mod tests {
                 .unwrap();
             let commodity = account.commodity().await.unwrap();
 
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(
-                f64,
-                account
-                    .balance_into_currency(&commodity, &book)
-                    .await
-                    .unwrap(),
-                24695.3
-            );
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 account
                     .balance_into_currency(&commodity, &book)
@@ -350,9 +336,6 @@ mod tests {
                 .unwrap()
                 .unwrap();
 
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, account.balance(&book).await.unwrap(), 4590.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(account.balance(&book).await.unwrap(), Decimal::new(4590, 0));
         }
     }
@@ -512,16 +495,6 @@ mod tests {
                 .unwrap();
             let commodity = account.commodity().await.unwrap();
 
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(
-                f64,
-                account
-                    .balance_into_currency(&commodity, &book)
-                    .await
-                    .unwrap(),
-                24695.3
-            );
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 account
                     .balance_into_currency(&commodity, &book)
@@ -541,9 +514,6 @@ mod tests {
                 .unwrap()
                 .unwrap();
 
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, account.balance(&book).await.unwrap(), 4590.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(account.balance(&book).await.unwrap(), Decimal::new(4590, 0));
         }
     }
@@ -703,16 +673,6 @@ mod tests {
                 .unwrap();
             let commodity = account.commodity().await.unwrap();
 
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(
-                f64,
-                account
-                    .balance_into_currency(&commodity, &book)
-                    .await
-                    .unwrap(),
-                24695.3
-            );
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 account
                     .balance_into_currency(&commodity, &book)
@@ -732,9 +692,6 @@ mod tests {
                 .unwrap()
                 .unwrap();
 
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, account.balance(&book).await.unwrap(), 4590.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(account.balance(&book).await.unwrap(), Decimal::new(4590, 0));
         }
     }
@@ -899,16 +856,6 @@ mod tests {
                 .unwrap();
             let commodity = account.commodity().await.unwrap();
 
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(
-                f64,
-                account
-                    .balance_into_currency(&commodity, &book)
-                    .await
-                    .unwrap(),
-                24695.3
-            );
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 account
                     .balance_into_currency(&commodity, &book)
@@ -928,9 +875,6 @@ mod tests {
                 .unwrap()
                 .unwrap();
 
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, account.balance(&book).await.unwrap(), 4590.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(account.balance(&book).await.unwrap(), Decimal::new(4590, 0));
         }
     }

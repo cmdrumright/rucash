@@ -20,7 +20,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 sqlx = { version = "0.9.0-alpha.1", optional = true }
 # sqlx = { git = "https://github.com/launchbadge/sqlx.git", optional = true }
 chrono = "0.4"
-rust_decimal = { version = "1.39", optional = true }
+rust_decimal = { version = "1.39" }
 roxmltree = { version = "0.21", optional = true }
 itertools = "0.14"
 flate2 = "1.1"
@@ -51,7 +51,6 @@ sqlite = ["rusqlite"]
 postgresql = ["sqlx_common", "sqlx/postgres"]
 mysql = ["sqlx_common", "sqlx/mysql"]
 xml = ["roxmltree"]
-decimal = ["rust_decimal"]
 
 [[bench]]
 name = "benchmark"

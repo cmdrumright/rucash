@@ -8,6 +8,7 @@ pub(crate) mod sqlite;
 pub(crate) mod xml;
 
 use chrono::NaiveDateTime;
+use rust_decimal::Decimal;
 
 use crate::error::Error;
 
@@ -65,6 +66,27 @@ pub trait Query:
         &self,
     ) -> impl std::future::Future<Output = Result<Vec<Self::T>, Error>> + Send {
         async { TransactionQ::all(self).await }
+    }
+    fn create_transaction(
+        &self,
+        tx_guid: &str,
+        currency_guid: &str,
+        num: &str,
+        post_date: &NaiveDateTime,
+        enter_date: &NaiveDateTime,
+        description: &str
+    ) -> impl std::future::Future<Output = Result<Vec<Self::T>, Error>> + Send {
+        async {
+            TransactionQ::create(
+                self,
+                tx_guid,
+                currency_guid,
+                num,
+                post_date,
+                enter_date,
+                description).await?;
+            TransactionQ::guid(self, tx_guid).await
+        }
     }
     fn prices(&self) -> impl std::future::Future<Output = Result<Vec<Self::P>, Error>> + Send {
         async { PriceQ::all(self).await }
@@ -191,6 +213,15 @@ pub trait TransactionQ {
         &self,
         guid: &str,
     ) -> impl std::future::Future<Output = Result<Vec<Self::T>, Error>> + Send;
+    fn create(
+        &self,
+        tx_guid: &str,
+        currency_guid: &str,
+        num: &str,
+        post_date: &NaiveDateTime,
+        enter_date: &NaiveDateTime,
+        description: &str,
+    ) -> impl std::future::Future<Output = Result<(), Error>> + Send;
 }
 
 pub trait AccountT {
@@ -224,7 +255,7 @@ pub trait PriceT {
     fn datetime(&self) -> NaiveDateTime;
     fn source(&self) -> String;
     fn r#type(&self) -> String;
-    fn value(&self) -> crate::Num;
+    fn value(&self) -> Decimal;
 }
 pub trait SplitT {
     fn guid(&self) -> String;
@@ -235,8 +266,8 @@ pub trait SplitT {
     fn reconcile_state(&self) -> bool;
     fn reconcile_datetime(&self) -> Option<NaiveDateTime>;
     fn lot_guid(&self) -> String;
-    fn value(&self) -> crate::Num;
-    fn quantity(&self) -> crate::Num;
+    fn value(&self) -> Decimal;
+    fn quantity(&self) -> Decimal;
 }
 pub trait TransactionT {
     fn guid(&self) -> String;
@@ -251,9 +282,6 @@ pub trait TransactionT {
 mod tests {
     use super::*;
 
-    #[cfg(not(feature = "decimal"))]
-    use float_cmp::assert_approx_eq;
-    #[cfg(feature = "decimal")]
     use rust_decimal::Decimal;
     use tokio::sync::OnceCell;
 
@@ -436,9 +464,6 @@ mod tests {
                     .await
                     .unwrap();
 
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result[0].value(), 1.5);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result[0].value(), Decimal::new(15, 1));
             }
 
@@ -449,9 +474,6 @@ mod tests {
                     .await
                     .unwrap();
 
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result[0].value(), 1.5);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result[0].value(), Decimal::new(15, 1));
             }
 
@@ -462,9 +484,6 @@ mod tests {
                     .await
                     .unwrap();
 
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result[0].value(), 1.5);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result[0].value(), Decimal::new(15, 1));
             }
 
@@ -495,9 +514,6 @@ mod tests {
                     .await
                     .unwrap();
 
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result[0].value(), 150.0);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result[0].value(), Decimal::new(150, 0));
             }
 
@@ -626,9 +642,6 @@ mod tests {
                 );
                 assert_eq!(result.source(), "user:price-editor");
                 assert_eq!(result.r#type(), "unknown");
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result.value(), 1.5);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result.value(), Decimal::new(15, 1));
             }
         }
@@ -651,13 +664,7 @@ mod tests {
                 assert!(!result.reconcile_state());
                 assert_eq!(result.reconcile_datetime(), None);
                 assert_eq!(result.lot_guid(), "");
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result.value(), 150.0);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result.value(), Decimal::new(150, 0));
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result.quantity(), 150.0);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result.quantity(), Decimal::new(150, 0));
             }
         }
@@ -870,9 +877,6 @@ mod tests {
                     .await
                     .unwrap();
 
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result[0].value(), 1.5);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result[0].value(), Decimal::new(15, 1));
             }
 
@@ -883,9 +887,6 @@ mod tests {
                     .await
                     .unwrap();
 
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result[0].value(), 1.5);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result[0].value(), Decimal::new(15, 1));
             }
 
@@ -896,9 +897,6 @@ mod tests {
                     .await
                     .unwrap();
 
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result[0].value(), 1.5);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result[0].value(), Decimal::new(15, 1));
             }
 
@@ -929,9 +927,6 @@ mod tests {
                     .await
                     .unwrap();
 
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result[0].value(), 150.0);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result[0].value(), Decimal::new(150, 0));
             }
 
@@ -1060,9 +1055,6 @@ mod tests {
                 );
                 assert_eq!(result.source(), "user:price-editor");
                 assert_eq!(result.r#type(), "unknown");
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result.value(), 1.5);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result.value(), Decimal::new(15, 1));
             }
         }
@@ -1085,13 +1077,7 @@ mod tests {
                 assert!(!result.reconcile_state());
                 assert_eq!(result.reconcile_datetime(), None);
                 assert_eq!(result.lot_guid(), "");
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result.value(), 150.0);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result.value(), Decimal::new(150, 0));
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result.quantity(), 150.0);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result.quantity(), Decimal::new(150, 0));
             }
         }
@@ -1304,9 +1290,6 @@ mod tests {
                     .await
                     .unwrap();
 
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result[0].value(), 1.5);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result[0].value(), Decimal::new(15, 1));
             }
 
@@ -1317,9 +1300,6 @@ mod tests {
                     .await
                     .unwrap();
 
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result[0].value(), 1.5);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result[0].value(), Decimal::new(15, 1));
             }
 
@@ -1330,9 +1310,6 @@ mod tests {
                     .await
                     .unwrap();
 
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result[0].value(), 1.5);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result[0].value(), Decimal::new(15, 1));
             }
 
@@ -1363,9 +1340,6 @@ mod tests {
                     .await
                     .unwrap();
 
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result[0].value(), 150.0);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result[0].value(), Decimal::new(150, 0));
             }
 
@@ -1494,9 +1468,6 @@ mod tests {
                 );
                 assert_eq!(result.source(), "user:price-editor");
                 assert_eq!(result.r#type(), "unknown");
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result.value(), 1.5);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result.value(), Decimal::new(15, 1));
             }
         }
@@ -1519,13 +1490,7 @@ mod tests {
                 assert!(!result.reconcile_state());
                 assert_eq!(result.reconcile_datetime(), None);
                 assert_eq!(result.lot_guid(), "");
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result.value(), 150.0);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result.value(), Decimal::new(150, 0));
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result.quantity(), 150.0);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result.quantity(), Decimal::new(150, 0));
             }
         }
@@ -1739,9 +1704,6 @@ mod tests {
                     .await
                     .unwrap();
 
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result[0].value(), 1.5);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result[0].value(), Decimal::new(15, 1));
             }
 
@@ -1750,9 +1712,6 @@ mod tests {
                 let query = setup().await;
                 let result = PriceQ::commodity_guid(query, "ADF").await.unwrap();
 
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result[0].value(), 1.5);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result[0].value(), Decimal::new(15, 1));
             }
 
@@ -1766,9 +1725,6 @@ mod tests {
                     .filter(|p| p.commodity_guid == "ADF")
                     .collect();
 
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result[0].value(), 1.5);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result[0].value(), Decimal::new(15, 1));
             }
 
@@ -1798,9 +1754,6 @@ mod tests {
                     .await
                     .unwrap();
 
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result[0].value(), 150.0);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result[0].value(), Decimal::new(150, 0));
             }
 
@@ -1925,9 +1878,6 @@ mod tests {
                 );
                 assert_eq!(result.source(), "user:price-editor");
                 assert_eq!(result.r#type(), "unknown");
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result.value(), 1.5);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result.value(), Decimal::new(15, 1));
             }
         }
@@ -1950,13 +1900,7 @@ mod tests {
                 assert!(!result.reconcile_state());
                 assert_eq!(result.reconcile_datetime(), None);
                 assert_eq!(result.lot_guid(), "");
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result.value(), 150.0);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result.value(), Decimal::new(150, 0));
-                #[cfg(not(feature = "decimal"))]
-                assert_approx_eq!(f64, result.quantity(), 150.0);
-                #[cfg(feature = "decimal")]
                 assert_eq!(result.quantity(), Decimal::new(150, 0));
             }
         }

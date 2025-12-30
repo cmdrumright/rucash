@@ -3,7 +3,6 @@
         "sqlite",
         "postgresql",
         "mysql",
-        "xml",
-        "decimal"
+        "xml"
     ]
 }

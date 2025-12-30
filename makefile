@@ -7,11 +7,6 @@ test:
 	cargo test --features postgresql
 	cargo test --features mysql
 	cargo test --features xml
-	cargo test --features sqlite,postgresql,mysql,xml,decimal
-	cargo test --features sqlite,decimal
-	cargo test --features postgresql,decimal
-	cargo test --features mysql,decimal
-	cargo test --features xml,decimal
 clean:
 	cargo clean
 bench:
@@ -19,8 +14,6 @@ bench:
 check:
 	cargo check --features sqlite,postgresql,mysql,xml --all-targets
 	cargo clippy --features sqlite,postgresql,mysql,xml --all-targets
-	cargo check --features sqlite,postgresql,mysql,xml,decimal --all-targets
-	cargo clippy --features sqlite,postgresql,mysql,xml,decimal --all-targets
 checkschema:
 	export DATABASE_URL=sqlite://tests/db/sqlite/complex_sample.gnucash?mode=ro
 	cargo check --features sqlite,schema --all-targets

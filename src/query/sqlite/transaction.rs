@@ -66,6 +66,17 @@ description
 FROM transactions
 ";
 
+const INS: &str = r"
+INSERT INTO transactions (
+    guid,
+    currency_guid,
+    num,
+    post_date,
+    enter_date,
+    description
+) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+";
+
 impl TransactionQ for SQLiteQuery {
     type T = Transaction;
 
@@ -97,6 +108,31 @@ impl TransactionQ for SQLiteQuery {
             .mapped(|row| Transaction::try_from(row))
             .collect::<Result<Vec<_>, _>>()?;
         Ok(result)
+    }
+
+    async fn create(
+        &self,
+        tx_guid: &str,
+        currency_guid: &str,
+        num: &str,
+        post_date: &NaiveDateTime,
+        enter_date: &NaiveDateTime,
+        description: &str
+    ) -> Result<(), Error> {
+        let conn = self.conn.lock().unwrap();        
+        // Insert transaction
+        conn.execute(
+            INS,
+            (
+                tx_guid,
+                currency_guid,
+                num,
+                post_date,
+                enter_date,
+                description
+            ),
+        )?;
+        Ok(())
     }
 }
 

@@ -9,7 +9,7 @@ where
     Q: Query,
 {
     pub account: Account<Q>,
-    pub memo: Option<String>,
+    pub memo: String,
     pub amount: Decimal,
     pub quantity: Option<Decimal>,
 }
@@ -25,7 +25,7 @@ where
     ) -> Self {
         Self {
             account,
-            memo: None,
+            memo: "".to_string(),
             amount,
             quantity: None,
         }
@@ -36,8 +36,8 @@ where
         self
     }
 
-    pub fn with_memo(mut self, memo: impl Into<String>) -> Self {
-        self.memo = Some(memo.into());
+    pub fn with_memo(mut self, memo: String) -> Self {
+        self.memo = memo;
         self
     }
 }

@@ -31,11 +31,6 @@ mod query;
 
 pub mod model;
 
-#[cfg(not(feature = "decimal"))]
-pub type Num = f64;
-#[cfg(feature = "decimal")]
-pub type Num = rust_decimal::Decimal;
-
 pub use book::Book;
 pub use error::Error;
 pub use query::Query;

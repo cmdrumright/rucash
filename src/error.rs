@@ -1,3 +1,5 @@
+use rust_decimal::Decimal;
+
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("No book found: {0}")]
@@ -12,6 +14,8 @@ pub enum Error {
     NameMultipleFound { model: String, name: String },
     #[error("Exchange graph not available")]
     NoExchangeGraph,
+    #[error("Splits not balanced: {sum}")]
+    UnbalancedSplits { sum: Decimal },
 
     #[error("I/O error: {0}")]
     IO(#[from] std::io::Error),

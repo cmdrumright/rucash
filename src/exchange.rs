@@ -1,8 +1,7 @@
 use chrono::NaiveDateTime;
-#[cfg(not(feature = "decimal"))]
-use num_traits::Zero;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
+use rust_decimal::Decimal;
 
 use crate::error::Error;
 use crate::model::{Commodity, Price};
@@ -10,7 +9,7 @@ use crate::query::{CommodityQ, PriceQ, Query};
 
 #[derive(Debug, Clone)]
 pub(crate) struct Exchange {
-    graph: HashMap<String, HashMap<String, (crate::Num, NaiveDateTime)>>,
+    graph: HashMap<String, HashMap<String, (Decimal, NaiveDateTime)>>,
 }
 
 impl Exchange {
@@ -25,7 +24,7 @@ impl Exchange {
 
     async fn new_graph<Q>(
         query: Arc<Q>,
-    ) -> Result<HashMap<String, HashMap<String, (crate::Num, NaiveDateTime)>>, Error>
+    ) -> Result<HashMap<String, HashMap<String, (Decimal, NaiveDateTime)>>, Error>
     where
         Q: Query,
     {
@@ -44,7 +43,7 @@ impl Exchange {
             })
             .collect();
 
-        let mut graph: HashMap<String, HashMap<String, (crate::Num, NaiveDateTime)>> =
+        let mut graph: HashMap<String, HashMap<String, (Decimal, NaiveDateTime)>> =
             HashMap::new();
 
         for p in prices {
@@ -88,10 +87,10 @@ impl Exchange {
                 .entry(commodity.clone())
                 .and_modify(|e| {
                     if e.1 < p.datetime {
-                        *e = (num_traits::one::<crate::Num>() / p.value, p.datetime);
+                        *e = (Decimal::new(1, 0) / p.value, p.datetime);
                     }
                 })
-                .or_insert((num_traits::one::<crate::Num>() / p.value, p.datetime));
+                .or_insert((Decimal::new(1, 0) / p.value, p.datetime));
         }
 
         Ok(graph)
@@ -101,7 +100,7 @@ impl Exchange {
         &self,
         commodity: &Commodity<Q>,
         currency: &Commodity<Q>,
-    ) -> Option<crate::Num>
+    ) -> Option<Decimal>
     where
         Q: Query,
     {
@@ -112,7 +111,7 @@ impl Exchange {
         }
 
         let mut visited: HashSet<(&str, &str)> = HashSet::new();
-        let mut queue: VecDeque<(&str, crate::Num, chrono::NaiveDateTime)> = VecDeque::new();
+        let mut queue: VecDeque<(&str, Decimal, chrono::NaiveDateTime)> = VecDeque::new();
         queue.push_back((
             commodity,
             num_traits::one(),
@@ -172,9 +171,6 @@ mod tests {
     use super::*;
     use crate::Book;
 
-    #[cfg(not(feature = "decimal"))]
-    use float_cmp::assert_approx_eq;
-    #[cfg(feature = "decimal")]
     use rust_decimal::Decimal;
 
     #[cfg(feature = "sqlite")]
@@ -221,9 +217,6 @@ mod tests {
                 .unwrap();
             assert_eq!(from.mnemonic, "ADF");
             assert_eq!(to.mnemonic, "AED");
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 1.5, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(15, 1), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -240,9 +233,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "FOO")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 1.0, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(10, 1), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -259,9 +249,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "AED")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 0.9, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(9, 1), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -278,9 +265,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "USD")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 1.0 / 1.4, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 Decimal::new(10, 1) / Decimal::new(14, 1),
                 exchange.cal(&from, &to).unwrap()
@@ -300,9 +284,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "EUR")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 0.9, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(9, 1), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -319,13 +300,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "AED")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(
-                f64,
-                7.0 / 5.0 * 10.0 / 9.0,
-                exchange.cal(&from, &to).unwrap()
-            );
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 (Decimal::new(7, 0) / Decimal::new(5, 0))
                     * (Decimal::new(10, 0) / Decimal::new(9, 0)),
@@ -346,9 +320,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "EUR")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 0.81, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(81, 2), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -365,9 +336,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "FOO")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 1.0 / 0.81, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 Decimal::new(10, 1) / Decimal::new(81, 2),
                 exchange.cal(&from, &to).unwrap()
@@ -414,9 +382,6 @@ mod tests {
                 .unwrap();
             assert_eq!(from.mnemonic, "ADF");
             assert_eq!(to.mnemonic, "AED");
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 1.5, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(15, 1), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -433,9 +398,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "FOO")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 1.0, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(10, 1), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -452,9 +414,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "AED")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 0.9, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(9, 1), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -471,9 +430,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "USD")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 1.0 / 1.4, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 Decimal::new(10, 1) / Decimal::new(14, 1),
                 exchange.cal(&from, &to).unwrap()
@@ -493,9 +449,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "EUR")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 0.9, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(9, 1), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -512,13 +465,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "AED")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(
-                f64,
-                7.0 / 5.0 * 10.0 / 9.0,
-                exchange.cal(&from, &to).unwrap()
-            );
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 (Decimal::new(7, 0) / Decimal::new(5, 0))
                     * (Decimal::new(10, 0) / Decimal::new(9, 0)),
@@ -539,9 +485,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "EUR")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 0.81, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(81, 2), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -558,9 +501,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "FOO")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 1.0 / 0.81, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 Decimal::new(10, 1) / Decimal::new(81, 2),
                 exchange.cal(&from, &to).unwrap()
@@ -608,9 +548,6 @@ mod tests {
                 .unwrap();
             assert_eq!(from.mnemonic, "ADF");
             assert_eq!(to.mnemonic, "AED");
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 1.5, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(15, 1), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -627,9 +564,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "FOO")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 1.0, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(10, 1), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -646,9 +580,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "AED")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 0.9, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(9, 1), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -665,9 +596,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "USD")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 1.0 / 1.4, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 Decimal::new(10, 1) / Decimal::new(14, 1),
                 exchange.cal(&from, &to).unwrap()
@@ -687,9 +615,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "EUR")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 0.9, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(9, 1), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -706,13 +631,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "AED")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(
-                f64,
-                7.0 / 5.0 * 10.0 / 9.0,
-                exchange.cal(&from, &to).unwrap()
-            );
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 (Decimal::new(7, 0) / Decimal::new(5, 0))
                     * (Decimal::new(10, 0) / Decimal::new(9, 0)),
@@ -733,9 +651,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "EUR")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 0.81, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(81, 2), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -752,9 +667,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "FOO")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 1.0 / 0.81, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 Decimal::new(10, 1) / Decimal::new(81, 2),
                 exchange.cal(&from, &to).unwrap()
@@ -804,9 +716,6 @@ mod tests {
                 .unwrap();
             assert_eq!(from.mnemonic, "ADF");
             assert_eq!(to.mnemonic, "AED");
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 1.5, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(15, 1), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -823,9 +732,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "FOO")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 1.0, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(10, 1), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -842,9 +748,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "AED")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 0.9, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(9, 1), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -861,9 +764,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "USD")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 1.0 / 1.4, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 Decimal::new(10, 1) / Decimal::new(14, 1),
                 exchange.cal(&from, &to).unwrap()
@@ -883,9 +783,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "EUR")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 0.9, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(9, 1), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -902,13 +799,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "AED")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(
-                f64,
-                7.0 / 5.0 * 10.0 / 9.0,
-                exchange.cal(&from, &to).unwrap()
-            );
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 (Decimal::new(7, 0) / Decimal::new(5, 0))
                     * (Decimal::new(10, 0) / Decimal::new(9, 0)),
@@ -929,9 +819,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "EUR")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 0.81, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(Decimal::new(81, 2), exchange.cal(&from, &to).unwrap());
 
             let from = book
@@ -948,9 +835,6 @@ mod tests {
                 .into_iter()
                 .find(|c| c.mnemonic == "FOO")
                 .unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, 1.0 / 0.81, exchange.cal(&from, &to).unwrap());
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 Decimal::new(10, 1) / Decimal::new(81, 2),
                 exchange.cal(&from, &to).unwrap()

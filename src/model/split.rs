@@ -1,5 +1,6 @@
 use chrono::NaiveDateTime;
 use std::sync::Arc;
+use rust_decimal::Decimal;
 
 use crate::error::Error;
 use crate::model::{Account, Transaction};
@@ -19,8 +20,8 @@ where
     pub action: String,
     pub reconcile_state: bool,
     pub reconcile_datetime: Option<NaiveDateTime>,
-    pub value: crate::Num,
-    pub quantity: crate::Num,
+    pub value: Decimal,
+    pub quantity: Decimal,
     pub lot_guid: String,
 }
 
@@ -99,11 +100,6 @@ mod tests {
 
     use crate::Book;
 
-    #[cfg(not(feature = "decimal"))]
-    use float_cmp::assert_approx_eq;
-    #[cfg(feature = "decimal")]
-    use rust_decimal::Decimal;
-
     #[cfg(feature = "sqlite")]
     mod sqlite {
         use super::*;
@@ -160,13 +156,7 @@ mod tests {
                 NaiveDateTime::parse_from_str("2014-12-24 10:59:00", "%Y-%m-%d %H:%M:%S").ok()
             );
             assert_eq!(result.lot_guid, "lot_guid");
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, result.value, 100.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(result.value, Decimal::new(100, 0));
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, result.quantity, 110.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(result.quantity, Decimal::new(110, 0));
         }
 
@@ -251,13 +241,7 @@ mod tests {
                 NaiveDateTime::parse_from_str("2014-12-24 10:59:00", "%Y-%m-%d %H:%M:%S").ok()
             );
             assert_eq!(result.lot_guid, "lot_guid");
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, result.value, 100.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(result.value, Decimal::new(100, 0));
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, result.quantity, 110.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(result.quantity, Decimal::new(110, 0));
         }
 
@@ -342,13 +326,7 @@ mod tests {
                 NaiveDateTime::parse_from_str("2014-12-24 10:59:00", "%Y-%m-%d %H:%M:%S").ok()
             );
             assert_eq!(result.lot_guid, "lot_guid");
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, result.value, 100.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(result.value, Decimal::new(100, 0));
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, result.quantity, 110.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(result.quantity, Decimal::new(110, 0));
         }
 
@@ -438,13 +416,7 @@ mod tests {
                 NaiveDateTime::parse_from_str("2014-12-24 10:59:00", "%Y-%m-%d %H:%M:%S").ok()
             );
             assert_eq!(result.lot_guid, "lot_guid");
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, result.value, 100.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(result.value, Decimal::new(100, 0));
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, result.quantity, 110.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(result.quantity, Decimal::new(110, 0));
         }
 

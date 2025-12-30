@@ -3,7 +3,6 @@
 
 use chrono::{DateTime, NaiveDateTime};
 use rusqlite::Row;
-#[cfg(feature = "decimal")]
 use rust_decimal::Decimal;
 
 use super::SQLiteQuery;
@@ -77,24 +76,10 @@ impl SplitT for Split {
         self.lot_guid.clone().unwrap_or_default()
     }
 
-    #[cfg(not(feature = "decimal"))]
-    #[allow(clippy::cast_precision_loss)]
-    fn value(&self) -> f64 {
-        self.value_num as f64 / self.value_denom as f64
-    }
-
-    #[cfg(feature = "decimal")]
     fn value(&self) -> Decimal {
         Decimal::new(self.value_num, 0) / Decimal::new(self.value_denom, 0)
     }
 
-    #[cfg(not(feature = "decimal"))]
-    #[allow(clippy::cast_precision_loss)]
-    fn quantity(&self) -> f64 {
-        self.quantity_num as f64 / self.quantity_denom as f64
-    }
-
-    #[cfg(feature = "decimal")]
     fn quantity(&self) -> Decimal {
         Decimal::new(self.quantity_num, 0) / Decimal::new(self.quantity_denom, 0)
     }
@@ -215,8 +200,6 @@ impl SplitQ for SQLiteQuery {
 mod tests {
     use super::*;
 
-    #[cfg(not(feature = "decimal"))]
-    use float_cmp::assert_approx_eq;
     use pretty_assertions::assert_eq;
     use tokio::sync::OnceCell;
 
@@ -276,13 +259,7 @@ mod tests {
         assert_eq!(result.reconcile_state(), false);
         assert_eq!(result.reconcile_datetime(), None);
         assert_eq!(result.lot_guid(), "");
-        #[cfg(not(feature = "decimal"))]
-        assert_approx_eq!(f64, result.value(), 150.0);
-        #[cfg(feature = "decimal")]
         assert_eq!(result.value(), Decimal::new(150, 0));
-        #[cfg(not(feature = "decimal"))]
-        assert_approx_eq!(f64, result.quantity(), 150.0);
-        #[cfg(feature = "decimal")]
         assert_eq!(result.quantity(), Decimal::new(150, 0));
     }
 
@@ -301,9 +278,6 @@ mod tests {
             .await
             .unwrap();
 
-        #[cfg(not(feature = "decimal"))]
-        assert_approx_eq!(f64, result[0].value(), 150.0);
-        #[cfg(feature = "decimal")]
         assert_eq!(result[0].value(), Decimal::new(150, 0));
     }
 

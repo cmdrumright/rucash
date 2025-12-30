@@ -1,7 +1,9 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use chrono::NaiveDateTime;
+use chrono::{DateTime, NaiveDateTime, Utc};
 use uuid::Uuid;
+use rust_decimal::Decimal;
+use num_traits::ToPrimitive;
 
 use crate::error::Error;
 use crate::exchange::Exchange;
@@ -166,6 +168,98 @@ where
             .collect())
     }
 
+    pub async fn create_transaction(
+        &self,
+        currency: Commodity<Q>,
+        num: &str,
+        post_date: &NaiveDateTime,
+        description: &str,
+        splits: Vec<SplitBuilder<Q>>
+    ) -> Result<Transaction<Q>, Error> {
+        // Validate that splits balance (sum of values must be zero)
+        let total: Decimal = splits.iter().map(|split| split.amount).sum();
+        if total != Decimal::from(0) {
+            return Err(Error::UnbalancedSplits {
+                sum: total
+            });
+        }
+        
+        let new_guid = Uuid::new_v4().to_string();
+        let tx_guid = new_guid.as_str();
+        let enter_date = Utc::now().naive_utc();
+
+        let q_transactions = self.query.create_transaction(
+            &tx_guid,
+            &currency.guid,
+            num,
+            post_date,
+            &enter_date,
+            description
+        ).await?;
+        let mut transactions: Vec<Transaction<Q>> = q_transactions
+            .into_iter()
+            .map(|x| Transaction::from_with_query(&x, self.query.clone()))
+            .collect();
+
+        // Loop through splits
+        for split in splits {
+
+            // initialize currency as transaction currency
+            let mut split_currency = &currency;
+            // initialize empty action
+            let mut action = "";
+            // set quantity to amount or given quantity
+            let quantity = match split.quantity {
+                None => split.amount,
+                Some(q) => q,
+            };
+            // Get commodity from account and check if currency then use it instead
+            let account_commodity = split.account.commodity().await.expect("commodity");
+            if account_commodity.namespace == "CURRENCY" {
+                split_currency = &account_commodity;
+            } else {
+                // if commodity not currency, set action buy or sell
+                if quantity > Decimal::from(0) {
+                    action = "Buy";
+                } else {
+                    action = "Sell";
+                }
+            }
+            // Get denom from account or currency
+            let value_denom= split_currency.fraction;
+            let quantity_denom = account_commodity.fraction;
+            // Use denom to get nums
+            let value_num = split.amount * Decimal::from(value_denom);
+            let quantity_num = quantity * Decimal::from(quantity_denom);
+            // Set reconcile date to unix epoch since entry will be unreconciled
+            let reconcile_date = DateTime::UNIX_EPOCH;
+
+            // create split
+            self.create_split(
+                tx_guid,
+                split.account,
+                split.memo.as_str(),
+                action,
+                "n", // 'n' = not reconciled,
+                &reconcile_date.naive_utc(),
+                value_num.trunc().to_i64().expect("i64 not returned"),
+                value_denom,
+                quantity_num.trunc().to_i64().expect("i64 not returned"),
+                quantity_denom
+            ).await?;
+        }
+
+        match transactions.pop() {
+            None => Err(Error::GuidNotFound { model: "transaction".to_string(), guid: new_guid }),
+            Some(x) if transactions.is_empty() => Ok(x),
+            _ => Err(Error::NameMultipleFound {
+                model: "Transactions".to_string(),
+                name: new_guid,
+            }),
+        }
+    }
+
+
     pub async fn prices(&self) -> Result<Vec<Price<Q>>, Error> {
         let prices = self.query.prices().await?;
         Ok(prices
@@ -210,7 +304,7 @@ where
         &self,
         commodity: &Commodity<Q>,
         currency: &Commodity<Q>,
-    ) -> Option<crate::Num> {
+    ) -> Option<Decimal> {
         self.exchange_graph
             .as_ref()?
             .lock()
@@ -234,9 +328,6 @@ where
 mod tests {
     use super::*;
 
-    #[cfg(not(feature = "decimal"))]
-    use float_cmp::assert_approx_eq;
-    #[cfg(feature = "decimal")]
     use rust_decimal::Decimal;
     use tokio::sync::OnceCell;
 
@@ -360,9 +451,6 @@ mod tests {
                 .unwrap();
 
             let rate = book.exchange(&commodity, &currency).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 1.5);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(15, 1));
         }
     }
@@ -481,9 +569,6 @@ mod tests {
                 .unwrap();
 
             let rate = book.exchange(&commodity, &currency).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 1.5);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(15, 1));
         }
     }
@@ -602,9 +687,6 @@ mod tests {
                 .unwrap();
 
             let rate = book.exchange(&commodity, &currency).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 1.5);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(15, 1));
         }
     }
@@ -731,9 +813,6 @@ mod tests {
                 .unwrap();
 
             let rate = book.exchange(&commodity, &currency).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 1.5);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(15, 1));
         }
     }

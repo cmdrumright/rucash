@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use rust_decimal::Decimal;
 
 use crate::book::Book;
 use crate::error::Error;
@@ -83,12 +84,12 @@ where
             .collect())
     }
 
-    pub async fn sell(&self, currency: &Self, book: &Book<Q>) -> Option<crate::Num> {
+    pub async fn sell(&self, currency: &Self, book: &Book<Q>) -> Option<Decimal> {
         // println!("{} to {}", self.mnemonic, currency.mnemonic);
         book.exchange(self, currency).await
     }
 
-    pub async fn buy(&self, commodity: &Self, book: &Book<Q>) -> Option<crate::Num> {
+    pub async fn buy(&self, commodity: &Self, book: &Book<Q>) -> Option<Decimal> {
         commodity.sell(self, book).await
     }
 }
@@ -96,11 +97,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[cfg(not(feature = "decimal"))]
-    use float_cmp::assert_approx_eq;
-    #[cfg(feature = "decimal")]
-    use rust_decimal::Decimal;
 
     #[cfg(feature = "sqlite")]
     mod sqlite {
@@ -246,15 +242,9 @@ mod tests {
                 .unwrap();
 
             let rate = commodity.sell(&currency, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 1.5);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(15, 1));
 
             let rate = currency.buy(&commodity, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 1.5);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(15, 1));
 
             // AED => EUR
@@ -276,15 +266,9 @@ mod tests {
                 .unwrap();
 
             let rate = commodity.sell(&currency, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 9.0 / 10.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(9, 0) / Decimal::new(10, 0));
 
             let rate = currency.buy(&commodity, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 9.0 / 10.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(9, 0) / Decimal::new(10, 0));
         }
 
@@ -309,9 +293,6 @@ mod tests {
                 .unwrap();
 
             let rate = commodity.sell(&currency, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 7.0 / 5.0 * 10.0 / 9.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 rate,
                 (Decimal::new(7, 0) / Decimal::new(5, 0))
@@ -458,15 +439,9 @@ mod tests {
                 .unwrap();
 
             let rate = commodity.sell(&currency, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 1.5);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(15, 1));
 
             let rate = currency.buy(&commodity, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 1.5);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(15, 1));
 
             // AED => EUR
@@ -488,15 +463,9 @@ mod tests {
                 .unwrap();
 
             let rate = commodity.sell(&currency, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 9.0 / 10.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(9, 0) / Decimal::new(10, 0));
 
             let rate = currency.buy(&commodity, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 9.0 / 10.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(9, 0) / Decimal::new(10, 0));
         }
 
@@ -521,9 +490,6 @@ mod tests {
                 .unwrap();
 
             let rate = commodity.sell(&currency, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 7.0 / 5.0 * 10.0 / 9.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 rate,
                 (Decimal::new(7, 0) / Decimal::new(5, 0))
@@ -670,15 +636,9 @@ mod tests {
                 .unwrap();
 
             let rate = commodity.sell(&currency, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 1.5);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(15, 1));
 
             let rate = currency.buy(&commodity, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 1.5);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(15, 1));
 
             // AED => EUR
@@ -700,15 +660,9 @@ mod tests {
                 .unwrap();
 
             let rate = commodity.sell(&currency, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 9.0 / 10.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(9, 0) / Decimal::new(10, 0));
 
             let rate = currency.buy(&commodity, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 9.0 / 10.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(9, 0) / Decimal::new(10, 0));
         }
 
@@ -733,9 +687,6 @@ mod tests {
                 .unwrap();
 
             let rate = commodity.sell(&currency, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 7.0 / 5.0 * 10.0 / 9.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 rate,
                 (Decimal::new(7, 0) / Decimal::new(5, 0))
@@ -887,15 +838,9 @@ mod tests {
                 .unwrap();
 
             let rate = commodity.sell(&currency, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 1.5);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(15, 1));
 
             let rate = currency.buy(&commodity, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 1.5);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(15, 1));
 
             // AED => EUR
@@ -917,15 +862,9 @@ mod tests {
                 .unwrap();
 
             let rate = commodity.sell(&currency, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 9.0 / 10.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(9, 0) / Decimal::new(10, 0));
 
             let rate = currency.buy(&commodity, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 9.0 / 10.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(rate, Decimal::new(9, 0) / Decimal::new(10, 0));
         }
 
@@ -950,9 +889,6 @@ mod tests {
                 .unwrap();
 
             let rate = commodity.sell(&currency, &book).await.unwrap();
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, rate, 7.0 / 5.0 * 10.0 / 9.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(
                 rate,
                 (Decimal::new(7, 0) / Decimal::new(5, 0))

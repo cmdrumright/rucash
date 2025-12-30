@@ -1,5 +1,6 @@
 use chrono::NaiveDateTime;
 use std::sync::Arc;
+use rust_decimal::Decimal;
 
 use crate::error::Error;
 use crate::model::Commodity;
@@ -18,7 +19,7 @@ where
     pub datetime: NaiveDateTime,
     pub source: String,
     pub r#type: String,
-    pub value: crate::Num,
+    pub value: Decimal,
 }
 
 impl<Q> Price<Q>
@@ -95,11 +96,6 @@ mod tests {
 
     use crate::Book;
 
-    #[cfg(not(feature = "decimal"))]
-    use float_cmp::assert_approx_eq;
-    #[cfg(feature = "decimal")]
-    use rust_decimal::Decimal;
-
     #[cfg(feature = "sqlite")]
     mod sqlite {
         use super::*;
@@ -146,9 +142,6 @@ mod tests {
             );
             assert_eq!(result.source, "source");
             assert_eq!(result.r#type, "type");
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, result.value, 100.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(result.value, Decimal::new(100, 0));
         }
 
@@ -223,9 +216,6 @@ mod tests {
             );
             assert_eq!(result.source, "source");
             assert_eq!(result.r#type, "type");
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, result.value, 100.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(result.value, Decimal::new(100, 0));
         }
 
@@ -300,9 +290,6 @@ mod tests {
             );
             assert_eq!(result.source, "source");
             assert_eq!(result.r#type, "type");
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, result.value, 100.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(result.value, Decimal::new(100, 0));
         }
 
@@ -382,9 +369,6 @@ mod tests {
             );
             assert_eq!(result.source, "source");
             assert_eq!(result.r#type, "type");
-            #[cfg(not(feature = "decimal"))]
-            assert_approx_eq!(f64, result.value, 100.0);
-            #[cfg(feature = "decimal")]
             assert_eq!(result.value, Decimal::new(100, 0));
         }
 
