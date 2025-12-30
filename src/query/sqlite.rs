@@ -4,7 +4,7 @@ pub(crate) mod price;
 pub(crate) mod split;
 pub(crate) mod transaction;
 
-use rusqlite::{Connection, OpenFlags};
+use rusqlite::Connection;
 use std::sync::{Arc, Mutex};
 
 use super::Query;
@@ -25,12 +25,7 @@ impl SQLiteQuery {
     /// `path-to-db/data.db` | Open the file `data.db` |
     /// `file:/path-to-db/data.db` | Open the file `data.db` |
     pub fn new(uri: &str) -> Result<Self, Error> {
-        let conn = Connection::open_with_flags(
-            uri,
-            OpenFlags::SQLITE_OPEN_READ_ONLY
-                | OpenFlags::SQLITE_OPEN_URI
-                | OpenFlags::SQLITE_OPEN_NO_MUTEX,
-        )?;
+        let conn = Connection::open(uri)?;
         let conn = Arc::new(Mutex::new(conn));
 
         Ok(Self { conn })

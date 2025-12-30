@@ -1,7 +1,4 @@
 use chrono::NaiveDateTime;
-#[cfg(not(feature = "decimal"))]
-use float_cmp::assert_approx_eq;
-#[cfg(feature = "decimal")]
 use rust_decimal::Decimal;
 
 use rucash::{Book, SQLiteQuery};
@@ -151,9 +148,6 @@ mod account {
             .find(|x| x.name == "Current")
             .unwrap();
 
-        #[cfg(not(feature = "decimal"))]
-        assert_approx_eq!(f64, account.balance(&book).await.unwrap(), 4590.0);
-        #[cfg(feature = "decimal")]
         assert_eq!(account.balance(&book).await.unwrap(), Decimal::new(4590, 0));
     }
     #[tokio::test]
@@ -168,9 +162,6 @@ mod account {
             .find(|x| x.name == "Asset")
             .unwrap();
 
-        #[cfg(not(feature = "decimal"))]
-        assert_approx_eq!(f64, account.balance(&book).await.unwrap(), 24695.3);
-        #[cfg(feature = "decimal")]
         assert_eq!(
             account.balance(&book).await.unwrap(),
             Decimal::new(246953, 1)
@@ -267,14 +258,8 @@ mod split {
         assert_eq!(split.reconcile_state, false);
         assert_eq!(split.reconcile_datetime, None);
 
-        #[cfg(not(feature = "decimal"))]
-        assert_approx_eq!(f64, split.value, 150.0);
-        #[cfg(feature = "decimal")]
         assert_eq!(split.value, Decimal::new(150, 0));
 
-        #[cfg(not(feature = "decimal"))]
-        assert_approx_eq!(f64, split.quantity, 150.0);
-        #[cfg(feature = "decimal")]
         assert_eq!(split.quantity, Decimal::new(150, 0));
 
         assert_eq!(split.lot_guid, "");
@@ -404,9 +389,6 @@ mod price {
         assert_eq!(price.source, "user:price-editor");
         assert_eq!(price.r#type, "unknown");
 
-        #[cfg(not(feature = "decimal"))]
-        assert_approx_eq!(f64, price.value, 1.5);
-        #[cfg(feature = "decimal")]
         assert_eq!(price.value, Decimal::new(15, 1));
     }
 
@@ -564,16 +546,8 @@ mod commodity {
             .find(|x| x.guid == "5f586908098232e67edb1371408bfaa8")
             .unwrap();
 
-        let rate = commodity.sell(&currency, &book).await.unwrap();
-        #[cfg(not(feature = "decimal"))]
-        assert_approx_eq!(f64, rate, 1.5);
-        #[cfg(feature = "decimal")]
         assert_eq!(rate, Decimal::new(15, 1));
 
-        let rate = currency.buy(&commodity, &book).await.unwrap();
-        #[cfg(not(feature = "decimal"))]
-        assert_approx_eq!(f64, rate, 1.5);
-        #[cfg(feature = "decimal")]
         assert_eq!(rate, Decimal::new(15, 1));
 
         // AED => EUR
@@ -594,16 +568,8 @@ mod commodity {
             .find(|x| x.guid == "346629655191dcf59a7e2c2a85b70f69")
             .unwrap();
 
-        let rate = commodity.sell(&currency, &book).await.unwrap();
-        #[cfg(not(feature = "decimal"))]
-        assert_approx_eq!(f64, rate, 9.0 / 10.0);
-        #[cfg(feature = "decimal")]
         assert_eq!(rate, Decimal::new(9, 0) / Decimal::new(10, 0));
 
-        let rate = currency.buy(&commodity, &book).await.unwrap();
-        #[cfg(not(feature = "decimal"))]
-        assert_approx_eq!(f64, rate, 9.0 / 10.0);
-        #[cfg(feature = "decimal")]
         assert_eq!(rate, Decimal::new(9, 0) / Decimal::new(10, 0));
     }
 
@@ -627,10 +593,6 @@ mod commodity {
             .find(|x| x.guid == "5f586908098232e67edb1371408bfaa8")
             .unwrap();
 
-        let rate = commodity.sell(&currency, &book).await.unwrap();
-        #[cfg(not(feature = "decimal"))]
-        assert_approx_eq!(f64, rate, 7.0 / 5.0 * 10.0 / 9.0);
-        #[cfg(feature = "decimal")]
         assert_eq!(
             rate,
             (Decimal::new(7, 0) / Decimal::new(5, 0)) * (Decimal::new(10, 0) / Decimal::new(9, 0)),
